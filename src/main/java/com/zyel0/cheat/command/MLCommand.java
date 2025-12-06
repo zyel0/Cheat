@@ -277,12 +277,13 @@ public class MLCommand implements CommandExecutor {
     
     private void handleQuickStart(CommandSender sender) {
         boolean currentMode = plugin.getConfig().getBoolean("ml.quick-start-mode", false);
-        boolean newMode = !currentMode;
+        // Toggle: enable if currently disabled, disable if currently enabled
+        boolean enableQuickStart = !currentMode;
         
-        plugin.getConfig().set("ml.quick-start-mode", newMode);
+        plugin.getConfig().set("ml.quick-start-mode", enableQuickStart);
         plugin.saveConfig();
         
-        if (newMode) {
+        if (enableQuickStart) {
             sender.sendMessage("§a§l⚡ Quick Start Mode Enabled!");
             sender.sendMessage("§7");
             sender.sendMessage("§eOptimizations:");

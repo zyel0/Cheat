@@ -203,6 +203,12 @@ public class MLManager {
         }
     }
     
+    // Quick Start mode constants
+    private static final int QUICK_START_TRAINING_DAYS = 1;
+    private static final int QUICK_START_MIN_SAMPLES = 500;
+    private static final double QUICK_START_THRESHOLD = 3.0;
+    private static final long QUICK_START_MEMORY_MB = 512;
+    
     /**
      * Load detector model from disk
      */
@@ -211,15 +217,15 @@ public class MLManager {
         boolean quickStart = plugin.getConfig().getBoolean("ml.quick-start-mode", false);
         
         // Get config values with quick-start overrides
-        int trainingPeriodDays = quickStart ? 1 : plugin.getConfig().getInt("ml.training-period-days", 7);
-        int minSamples = quickStart ? 500 : plugin.getConfig().getInt("ml.min-training-samples", 1000);
-        double threshold = quickStart ? 3.0 : plugin.getConfig().getDouble("ml.anomaly-threshold", 2.5);
-        long maxMemoryMB = quickStart ? 512 : plugin.getConfig().getLong("ml.max-memory-mb", 1024);
+        int trainingPeriodDays = quickStart ? QUICK_START_TRAINING_DAYS : plugin.getConfig().getInt("ml.training-period-days", 7);
+        int minSamples = quickStart ? QUICK_START_MIN_SAMPLES : plugin.getConfig().getInt("ml.min-training-samples", 1000);
+        double threshold = quickStart ? QUICK_START_THRESHOLD : plugin.getConfig().getDouble("ml.anomaly-threshold", 2.5);
+        long maxMemoryMB = quickStart ? QUICK_START_MEMORY_MB : plugin.getConfig().getLong("ml.max-memory-mb", 1024);
         
         if (quickStart) {
-            plugin.getLogger().info("§e[Quick Start Mode] Enabled - Optimized for faster training!");
-            plugin.getLogger().info("§e[Quick Start] Training: 1 day | Samples: 500 | Memory: 512MB");
-            plugin.getLogger().info("§e[Quick Start] Higher threshold (3.0) to reduce false positives during rapid learning");
+            plugin.getLogger().info("[Quick Start Mode] Enabled - Optimized for faster training!");
+            plugin.getLogger().info("[Quick Start] Training: 1 day | Samples: 500 | Memory: 512MB");
+            plugin.getLogger().info("[Quick Start] Higher threshold (3.0) to reduce false positives during rapid learning");
         }
         
         File dataFolder = new File(plugin.getDataFolder(), "ml-data");
