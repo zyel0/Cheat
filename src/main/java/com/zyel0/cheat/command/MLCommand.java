@@ -60,6 +60,14 @@ public class MLCommand implements CommandExecutor {
             case "save":
                 handleSave(sender);
                 break;
+            case "ram":
+                if (args.length >= 2) {
+                    handleRam(sender, args[1]);
+                } else {
+                    sender.sendMessage("§cUsage: /ml ram <limit_in_mb>");
+                    sender.sendMessage("§7Example: /ml ram 3000 (sets limit to 3GB)");
+                }
+                break;
             default:
                 sendHelp(sender);
                 break;
@@ -74,6 +82,7 @@ public class MLCommand implements CommandExecutor {
         sender.sendMessage("§e/ml status §7- View ML system status");
         sender.sendMessage("§e/ml clear <player|all> §7- Clear flags");
         sender.sendMessage("§e/ml save §7- Save ML model to disk");
+        sender.sendMessage("§e/ml ram <mb> §7- Set memory limit (e.g., /ml ram 3000)");
         sender.sendMessage("§7§m                                    ");
     }
     
@@ -168,19 +177,25 @@ public class MLCommand implements CommandExecutor {
         
         sender.sendMessage("§7§m          §r §6ML System Status §7§m          ");
         sender.sendMessage("§eTraining Status: §7" + 
-            (detector.isTrained() ? "§aCompleted" : "§eIn Progress"));
+            (detector.isTrained() ? "§aCompleted (Continuous Learning)" : "§eInitial Training"));
         
         if (!detector.isTrained()) {
             long remaining = detector.getTrainingTimeRemaining();
             long days = TimeUnit.MILLISECONDS.toDays(remaining);
             long hours = TimeUnit.MILLISECONDS.toHours(remaining) % 24;
             
-            sender.sendMessage("§eTime Remaining: §7" + days + "d " + hours + "h");
+            sender.sendMessage("§eTime Until Detection: §7" + days + "d " + hours + "h");
             sender.sendMessage("§eSamples Collected: §7" + detector.getTrainingSampleCount());
-            sender.sendMessage("§7The system is learning normal movement patterns.");
+            sender.sendMessage("§7Collecting movement data for initial training...");
         } else {
-            sender.sendMessage("§7The system is actively detecting anomalies.");
+            sender.sendMessage("§eSamples in Memory: §7" + detector.getCurrentSampleCount());
+            sender.sendMessage("§7Actively learning and detecting anomalies.");
         }
+        
+        // Memory usage info
+        long memUsage = detector.getEstimatedMemoryUsageMB();
+        long memLimit = detector.getMaxMemoryMB();
+        sender.sendMessage("§eMemory Usage: §7" + memUsage + "MB / " + memLimit + "MB");
         
         Map<UUID, List<AnomalyFlag>> allFlags = mlManager.getAllFlags();
         int totalFlags = allFlags.values().stream().mapToInt(List::size).sum();
@@ -209,6 +224,43 @@ public class MLCommand implements CommandExecutor {
     private void handleSave(CommandSender sender) {
         mlManager.saveDetector();
         sender.sendMessage("§aML model saved successfully.");
+    }
+    
+    private void handleRam(CommandSender sender, String limitStr) {
+        try {
+            // Parse the limit - support both "3000" and "3000mb" formats
+            String cleanLimit = limitStr.toLowerCase().replace("mb", "").trim();
+            long limitMB = Long.parseLong(cleanLimit);
+            
+            if (limitMB < 100) {
+                sender.sendMessage("§cMemory limit must be at least 100MB.");
+                return;
+            }
+            
+            if (limitMB > 20000) {
+                sender.sendMessage("§cMemory limit cannot exceed 20GB (20000MB).");
+                return;
+            }
+            
+            MovementAnomalyDetector detector = mlManager.getDetector();
+            long oldLimit = detector.getMaxMemoryMB();
+            detector.setMaxMemoryMB(limitMB);
+            
+            // Update config
+            plugin.getConfig().set("ml.max-memory-mb", limitMB);
+            plugin.saveConfig();
+            
+            sender.sendMessage("§aMemory limit updated: §e" + oldLimit + "MB §7→ §e" + limitMB + "MB");
+            sender.sendMessage("§7Limit will be enforced on new data collection.");
+            
+            // Show current usage
+            long currentUsage = detector.getEstimatedMemoryUsageMB();
+            sender.sendMessage("§eCurrent usage: §7" + currentUsage + "MB");
+            
+        } catch (NumberFormatException e) {
+            sender.sendMessage("§cInvalid memory limit. Use a number in MB.");
+            sender.sendMessage("§7Example: /ml ram 3000 (sets limit to 3GB)");
+        }
     }
     
     public boolean isFlagsEnabled(UUID playerId) {

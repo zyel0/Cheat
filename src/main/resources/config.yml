@@ -6,6 +6,8 @@ ml:
   debug: false
   
   # Training period in days (default: 7)
+  # After this period, the system will start flagging anomalies
+  # The system continues learning even after this period
   training-period-days: 7
   
   # Minimum samples needed before training (default: 1000)
@@ -20,6 +22,11 @@ ml:
   
   # Auto-save interval in minutes (default: 5)
   auto-save-interval: 5
+  
+  # Maximum memory usage in MB (default: 1024 = 1GB)
+  # Can be changed at runtime with /ml ram <mb>
+  # Higher values allow more training data but use more RAM
+  max-memory-mb: 1024
 
 # Legacy Login Check Settings (disabled by default, ML system is primary)
 login-check:

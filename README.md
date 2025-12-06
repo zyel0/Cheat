@@ -68,9 +68,10 @@ The compiled JAR will be in the `target` folder.
 
 ### ML System Commands
 - `/ml flags` - Toggle flag notifications and view current flags
-- `/ml status` - View ML system status, training progress, and statistics
+- `/ml status` - View ML system status, training progress, memory usage, and statistics
 - `/ml clear <player|all>` - Clear flags for a player or all players
 - `/ml save` - Manually save the ML model to disk
+- `/ml ram <mb>` - Set memory limit (e.g., `/ml ram 3000` for 3GB)
 
 Aliases: `/mlac`
 
@@ -92,12 +93,15 @@ Aliases: `/eac`
 The plugin is configurable through `config.yml`:
 
 ### ML Settings
-- `training-period-days` - How long to train (default: 7 days)
+- `training-period-days` - Initial training period before detection starts (default: 7 days)
 - `min-training-samples` - Minimum samples needed (default: 1000)
 - `anomaly-threshold` - Sensitivity (default: 2.5 std deviations)
 - `flag-threshold` - Anomalies needed to flag (default: 2)
 - `auto-save-interval` - How often to save model (default: 5 minutes)
+- `max-memory-mb` - Maximum RAM usage (default: 1024MB = 1GB)
 - `debug` - Enable detailed logging (default: false)
+
+**Note**: The system continues learning after the initial training period. It adapts to new playstyles while maintaining memory limits.
 
 ### Data Storage
 - ML models are saved in `plugins/Cheat/ml-data/model.json`

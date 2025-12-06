@@ -210,30 +210,34 @@ public class MLManager {
         int trainingPeriodDays = plugin.getConfig().getInt("ml.training-period-days", 7);
         int minSamples = plugin.getConfig().getInt("ml.min-training-samples", 1000);
         double threshold = plugin.getConfig().getDouble("ml.anomaly-threshold", 2.5);
+        long maxMemoryMB = plugin.getConfig().getLong("ml.max-memory-mb", 1024); // Default 1GB
         
         File dataFolder = new File(plugin.getDataFolder(), "ml-data");
         File modelFile = new File(dataFolder, "model.json");
         
         if (!modelFile.exists()) {
             plugin.getLogger().info("No existing ML model found. Starting fresh training period.");
-            return new MovementAnomalyDetector(trainingPeriodDays, minSamples, threshold);
+            plugin.getLogger().info("Memory limit: " + maxMemoryMB + "MB");
+            return new MovementAnomalyDetector(trainingPeriodDays, minSamples, threshold, maxMemoryMB);
         }
         
         try (Reader reader = new FileReader(modelFile)) {
             ModelData modelData = gson.fromJson(reader, ModelData.class);
             plugin.getLogger().info("Loaded existing ML model (trained: " + modelData.isTrained + ")");
+            plugin.getLogger().info("Memory limit: " + maxMemoryMB + "MB");
             
             return new MovementAnomalyDetector(
                 trainingPeriodDays,
                 minSamples,
                 threshold,
+                maxMemoryMB,
                 modelData.trainingStartTime,
                 modelData.isTrained,
                 modelData.featureStats
             );
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to load ML model: " + e.getMessage());
-            return new MovementAnomalyDetector(trainingPeriodDays, minSamples, threshold);
+            return new MovementAnomalyDetector(trainingPeriodDays, minSamples, threshold, maxMemoryMB);
         }
     }
     

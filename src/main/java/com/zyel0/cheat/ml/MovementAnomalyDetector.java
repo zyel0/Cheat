@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ML-based anomaly detector using statistical learning
- * Learns normal movement patterns during training period
+ * Learns normal movement patterns continuously with memory management
  */
 public class MovementAnomalyDetector {
     
@@ -21,7 +21,11 @@ public class MovementAnomalyDetector {
     private final long trainingStartTime;
     private boolean isTrained;
     
-    public MovementAnomalyDetector(int trainingPeriodDays, int minSamplesForTraining, double anomalyThreshold) {
+    // Memory management
+    private int maxSamplesPerContext;
+    private long maxMemoryMB;
+    
+    public MovementAnomalyDetector(int trainingPeriodDays, int minSamplesForTraining, double anomalyThreshold, long maxMemoryMB) {
         this.trainingPeriodDays = trainingPeriodDays;
         this.minSamplesForTraining = minSamplesForTraining;
         this.anomalyThreshold = anomalyThreshold;
@@ -29,10 +33,12 @@ public class MovementAnomalyDetector {
         this.featureStats = new ConcurrentHashMap<>();
         this.trainingStartTime = System.currentTimeMillis();
         this.isTrained = false;
+        this.maxMemoryMB = maxMemoryMB;
+        this.maxSamplesPerContext = calculateMaxSamplesPerContext(maxMemoryMB);
     }
     
     public MovementAnomalyDetector(int trainingPeriodDays, int minSamplesForTraining, double anomalyThreshold,
-                                   long trainingStartTime, boolean isTrained,
+                                   long maxMemoryMB, long trainingStartTime, boolean isTrained,
                                    Map<String, DescriptiveStatistics[]> featureStats) {
         this.trainingPeriodDays = trainingPeriodDays;
         this.minSamplesForTraining = minSamplesForTraining;
@@ -41,31 +47,57 @@ public class MovementAnomalyDetector {
         this.featureStats = new ConcurrentHashMap<>(featureStats);
         this.trainingStartTime = trainingStartTime;
         this.isTrained = isTrained;
+        this.maxMemoryMB = maxMemoryMB;
+        this.maxSamplesPerContext = calculateMaxSamplesPerContext(maxMemoryMB);
     }
     
     /**
-     * Process movement data - either for training or detection
+     * Calculate maximum samples per context based on memory limit
+     * Assumes ~16 features * 8 bytes per double = 128 bytes per sample
+     * With overhead, estimate 200 bytes per sample
+     */
+    private int calculateMaxSamplesPerContext(long memoryMB) {
+        long memoryBytes = memoryMB * 1024 * 1024;
+        long bytesPerSample = 200; // Conservative estimate with overhead
+        int estimatedContexts = 10; // Average number of movement contexts
+        return (int) (memoryBytes / (bytesPerSample * estimatedContexts));
+    }
+    
+    /**
+     * Process movement data - training and detection happen simultaneously after initial training
      */
     public double processMovement(MovementData data) {
         double[] features = data.extractFeatures();
         String context = getMovementContext(data);
         
-        if (isInTrainingPeriod()) {
-            // Collect training data
-            trainingData.computeIfAbsent(context, k -> new ArrayList<>()).add(features);
+        // Collect training data continuously for ongoing learning
+        List<double[]> contextSamples = trainingData.computeIfAbsent(context, k -> new ArrayList<>());
+        
+        // Add sample with memory management
+        synchronized (contextSamples) {
+            contextSamples.add(features);
             
-            // Check if we should train the model
-            if (shouldTrain()) {
-                trainModel();
+            // Remove oldest samples if exceeding memory limit
+            if (contextSamples.size() > maxSamplesPerContext) {
+                // Remove oldest 10% of samples to make room
+                int removeCount = maxSamplesPerContext / 10;
+                for (int i = 0; i < removeCount && !contextSamples.isEmpty(); i++) {
+                    contextSamples.remove(0);
+                }
             }
-            
-            return 0.0; // No anomaly during training
-        } else if (isTrained) {
-            // Detect anomalies
+        }
+        
+        // Check if we should train/retrain the model
+        if (shouldTrain()) {
+            trainModel();
+        }
+        
+        // Detect anomalies if trained
+        if (isTrained) {
             return calculateAnomalyScore(features, context);
         }
         
-        return 0.0;
+        return 0.0; // No anomaly detection before initial training
     }
     
     /**
@@ -107,8 +139,9 @@ public class MovementAnomalyDetector {
     
     /**
      * Train the model on collected data
+     * Uses streaming approach for memory efficiency
      */
-    private void trainModel() {
+    private synchronized void trainModel() {
         featureStats.clear();
         
         for (Map.Entry<String, List<double[]>> entry : trainingData.entrySet()) {
@@ -120,14 +153,18 @@ public class MovementAnomalyDetector {
             int numFeatures = samples.get(0).length;
             DescriptiveStatistics[] stats = new DescriptiveStatistics[numFeatures];
             
+            // Use windowed statistics to limit memory usage
             for (int i = 0; i < numFeatures; i++) {
                 stats[i] = new DescriptiveStatistics();
+                stats[i].setWindowSize(Math.min(10000, maxSamplesPerContext)); // Limit window
             }
             
             // Calculate statistics for each feature
-            for (double[] sample : samples) {
-                for (int i = 0; i < numFeatures; i++) {
-                    stats[i].addValue(sample[i]);
+            synchronized (samples) {
+                for (double[] sample : samples) {
+                    for (int i = 0; i < numFeatures; i++) {
+                        stats[i].addValue(sample[i]);
+                    }
                 }
             }
             
@@ -212,5 +249,32 @@ public class MovementAnomalyDetector {
     
     public int getTrainingPeriodDays() {
         return trainingPeriodDays;
+    }
+    
+    public long getMaxMemoryMB() {
+        return maxMemoryMB;
+    }
+    
+    public void setMaxMemoryMB(long maxMemoryMB) {
+        this.maxMemoryMB = maxMemoryMB;
+        this.maxSamplesPerContext = calculateMaxSamplesPerContext(maxMemoryMB);
+    }
+    
+    public int getMaxSamplesPerContext() {
+        return maxSamplesPerContext;
+    }
+    
+    public int getCurrentSampleCount() {
+        int total = 0;
+        for (List<double[]> samples : trainingData.values()) {
+            total += samples.size();
+        }
+        return total;
+    }
+    
+    public long getEstimatedMemoryUsageMB() {
+        int totalSamples = getCurrentSampleCount();
+        long bytesPerSample = 200; // Estimate with overhead
+        return (totalSamples * bytesPerSample) / (1024 * 1024);
     }
 }
