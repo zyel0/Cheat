@@ -12,24 +12,31 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MovementAnomalyDetector {
     
-    private static final int TRAINING_PERIOD_DAYS = 7;
-    private static final int MIN_SAMPLES_FOR_TRAINING = 1000;
-    private static final double ANOMALY_THRESHOLD = 2.5; // Standard deviations
+    private final int trainingPeriodDays;
+    private final int minSamplesForTraining;
+    private final double anomalyThreshold;
     
     private final Map<String, List<double[]>> trainingData;
     private final Map<String, DescriptiveStatistics[]> featureStats;
     private final long trainingStartTime;
     private boolean isTrained;
     
-    public MovementAnomalyDetector() {
+    public MovementAnomalyDetector(int trainingPeriodDays, int minSamplesForTraining, double anomalyThreshold) {
+        this.trainingPeriodDays = trainingPeriodDays;
+        this.minSamplesForTraining = minSamplesForTraining;
+        this.anomalyThreshold = anomalyThreshold;
         this.trainingData = new ConcurrentHashMap<>();
         this.featureStats = new ConcurrentHashMap<>();
         this.trainingStartTime = System.currentTimeMillis();
         this.isTrained = false;
     }
     
-    public MovementAnomalyDetector(long trainingStartTime, boolean isTrained,
+    public MovementAnomalyDetector(int trainingPeriodDays, int minSamplesForTraining, double anomalyThreshold,
+                                   long trainingStartTime, boolean isTrained,
                                    Map<String, DescriptiveStatistics[]> featureStats) {
+        this.trainingPeriodDays = trainingPeriodDays;
+        this.minSamplesForTraining = minSamplesForTraining;
+        this.anomalyThreshold = anomalyThreshold;
         this.trainingData = new ConcurrentHashMap<>();
         this.featureStats = new ConcurrentHashMap<>(featureStats);
         this.trainingStartTime = trainingStartTime;
@@ -80,7 +87,7 @@ public class MovementAnomalyDetector {
      */
     public boolean isInTrainingPeriod() {
         long elapsed = System.currentTimeMillis() - trainingStartTime;
-        long trainingPeriod = TRAINING_PERIOD_DAYS * 24L * 60L * 60L * 1000L;
+        long trainingPeriod = trainingPeriodDays * 24L * 60L * 60L * 1000L;
         return elapsed < trainingPeriod;
     }
     
@@ -95,7 +102,7 @@ public class MovementAnomalyDetector {
             totalSamples += samples.size();
         }
         
-        return totalSamples >= MIN_SAMPLES_FOR_TRAINING;
+        return totalSamples >= minSamplesForTraining;
     }
     
     /**
@@ -174,7 +181,7 @@ public class MovementAnomalyDetector {
      * Check if the anomaly score indicates suspicious behavior
      */
     public boolean isAnomaly(double score) {
-        return isTrained && score > ANOMALY_THRESHOLD;
+        return isTrained && score > anomalyThreshold;
     }
     
     public boolean isTrained() {
@@ -199,7 +206,11 @@ public class MovementAnomalyDetector {
     
     public long getTrainingTimeRemaining() {
         long elapsed = System.currentTimeMillis() - trainingStartTime;
-        long trainingPeriod = TRAINING_PERIOD_DAYS * 24L * 60L * 60L * 1000L;
+        long trainingPeriod = trainingPeriodDays * 24L * 60L * 60L * 1000L;
         return Math.max(0, trainingPeriod - elapsed);
+    }
+    
+    public int getTrainingPeriodDays() {
+        return trainingPeriodDays;
     }
 }

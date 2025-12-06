@@ -46,10 +46,12 @@ public class CheatPlugin extends JavaPlugin {
         getCommand("elytraac").setExecutor(new ElytraACCommand(this));
         getCommand("ml").setExecutor(new MLCommand(this, mlManager));
         
-        // Auto-save ML model every 5 minutes
+        // Auto-save ML model at configured interval
+        int autoSaveMinutes = getConfig().getInt("ml.auto-save-interval", 5);
+        long autoSaveIntervalTicks = autoSaveMinutes * 60L * 20L; // Convert minutes to ticks (20 ticks/second)
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
             mlManager.saveDetector();
-        }, 6000L, 6000L); // 6000 ticks = 5 minutes
+        }, autoSaveIntervalTicks, autoSaveIntervalTicks);
         
         getLogger().info("ML Anticheat plugin has been enabled!");
     }

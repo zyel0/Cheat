@@ -111,12 +111,13 @@ public class MovementListener implements Listener {
      */
     private boolean isInLava(Player player) {
         try {
-            // Try modern API first
+            // Try modern API first (1.16+)
             return player.isInLava();
         } catch (NoSuchMethodError e) {
-            // Fallback for older versions
+            // Fallback for older versions - check block type directly
             Location loc = player.getLocation();
-            return loc.getBlock().getType().toString().contains("LAVA");
+            org.bukkit.Material blockType = loc.getBlock().getType();
+            return blockType == org.bukkit.Material.LAVA;
         }
     }
 }

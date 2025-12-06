@@ -20,11 +20,10 @@ public class MLManager {
     private final CheatPlugin plugin;
     private final MovementAnomalyDetector detector;
     private final Map<UUID, List<AnomalyFlag>> playerFlags;
-    private final Map<UUID, Integer> recentAnomalyCount;
+    private final Map<UUID, AnomalyCountEntry> recentAnomalyCount;
     private final Gson gson;
-    
-    private static final int FLAG_THRESHOLD = 2; // Multiple anomalies needed to flag
-    private static final long ANOMALY_WINDOW_MS = 60000; // 1 minute window
+    private final int flagThreshold;
+    private final long anomalyWindowMs;
     
     public MLManager(CheatPlugin plugin) {
         this.plugin = plugin;
@@ -32,8 +31,25 @@ public class MLManager {
         this.recentAnomalyCount = new ConcurrentHashMap<>();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         
+        // Read config values
+        this.flagThreshold = plugin.getConfig().getInt("ml.flag-threshold", 2);
+        this.anomalyWindowMs = 60000; // 1 minute window
+        
         // Load or create detector
         this.detector = loadDetector();
+    }
+    
+    /**
+     * Helper class to track anomaly counts with timestamps
+     */
+    private static class AnomalyCountEntry {
+        int count;
+        long lastUpdate;
+        
+        AnomalyCountEntry(int count, long lastUpdate) {
+            this.count = count;
+            this.lastUpdate = lastUpdate;
+        }
     }
     
     /**
@@ -55,12 +71,23 @@ public class MLManager {
      * Handle detected anomaly
      */
     private void handleAnomaly(UUID playerId, String playerName, MovementData data, double score) {
-        // Increment recent anomaly count
-        int count = recentAnomalyCount.getOrDefault(playerId, 0) + 1;
-        recentAnomalyCount.put(playerId, count);
+        long now = System.currentTimeMillis();
+        
+        // Get or create anomaly count entry
+        AnomalyCountEntry entry = recentAnomalyCount.get(playerId);
+        
+        if (entry == null || (now - entry.lastUpdate) > anomalyWindowMs) {
+            // Reset if outside time window
+            entry = new AnomalyCountEntry(1, now);
+            recentAnomalyCount.put(playerId, entry);
+        } else {
+            // Increment count within window
+            entry.count++;
+            entry.lastUpdate = now;
+        }
         
         // Only create flag if multiple anomalies detected
-        if (count >= FLAG_THRESHOLD) {
+        if (entry.count >= flagThreshold) {
             String details = generateAnomalyDetails(data, score);
             AnomalyFlag flag = new AnomalyFlag(playerName, data, score, details);
             
@@ -70,6 +97,9 @@ public class MLManager {
             if (plugin.getConfig().getBoolean("ml.debug", false)) {
                 plugin.getLogger().warning("Flagged " + playerName + ": " + flag.generateFlagMessage());
             }
+            
+            // Reset count after flagging
+            recentAnomalyCount.remove(playerId);
         }
     }
     
@@ -105,10 +135,10 @@ public class MLManager {
      * Clean up old anomaly counts outside the time window
      */
     private void cleanupAnomalyCounts() {
-        // Reset counts periodically (every minute)
-        if (System.currentTimeMillis() % ANOMALY_WINDOW_MS < 1000) {
-            recentAnomalyCount.clear();
-        }
+        long now = System.currentTimeMillis();
+        recentAnomalyCount.entrySet().removeIf(entry -> 
+            (now - entry.getValue().lastUpdate) > anomalyWindowMs
+        );
     }
     
     /**
@@ -176,12 +206,17 @@ public class MLManager {
      * Load detector model from disk
      */
     private MovementAnomalyDetector loadDetector() {
+        // Get config values
+        int trainingPeriodDays = plugin.getConfig().getInt("ml.training-period-days", 7);
+        int minSamples = plugin.getConfig().getInt("ml.min-training-samples", 1000);
+        double threshold = plugin.getConfig().getDouble("ml.anomaly-threshold", 2.5);
+        
         File dataFolder = new File(plugin.getDataFolder(), "ml-data");
         File modelFile = new File(dataFolder, "model.json");
         
         if (!modelFile.exists()) {
             plugin.getLogger().info("No existing ML model found. Starting fresh training period.");
-            return new MovementAnomalyDetector();
+            return new MovementAnomalyDetector(trainingPeriodDays, minSamples, threshold);
         }
         
         try (Reader reader = new FileReader(modelFile)) {
@@ -189,13 +224,16 @@ public class MLManager {
             plugin.getLogger().info("Loaded existing ML model (trained: " + modelData.isTrained + ")");
             
             return new MovementAnomalyDetector(
+                trainingPeriodDays,
+                minSamples,
+                threshold,
                 modelData.trainingStartTime,
                 modelData.isTrained,
                 modelData.featureStats
             );
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to load ML model: " + e.getMessage());
-            return new MovementAnomalyDetector();
+            return new MovementAnomalyDetector(trainingPeriodDays, minSamples, threshold);
         }
     }
     

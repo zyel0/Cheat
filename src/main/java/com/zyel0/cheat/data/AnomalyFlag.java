@@ -73,13 +73,17 @@ public class AnomalyFlag {
         
         // Truncate to approximately 100 words
         String result = sb.toString();
-        String[] words = result.split("\\s+");
-        if (words.length > 100) {
-            StringBuilder truncated = new StringBuilder();
-            for (int i = 0; i < 100; i++) {
-                truncated.append(words[i]).append(" ");
+        int wordCount = 0;
+        int lastSpaceIndex = 0;
+        
+        for (int i = 0; i < result.length(); i++) {
+            if (Character.isWhitespace(result.charAt(i))) {
+                wordCount++;
+                lastSpaceIndex = i;
+                if (wordCount >= 100) {
+                    return result.substring(0, lastSpaceIndex) + "...";
+                }
             }
-            result = truncated.toString().trim() + "...";
         }
         
         return result;
