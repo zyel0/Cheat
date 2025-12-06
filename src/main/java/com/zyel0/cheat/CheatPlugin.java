@@ -46,8 +46,9 @@ public class CheatPlugin extends JavaPlugin {
         getCommand("elytraac").setExecutor(new ElytraACCommand(this));
         getCommand("ml").setExecutor(new MLCommand(this, mlManager));
         
-        // Auto-save ML model at configured interval
-        int autoSaveMinutes = getConfig().getInt("ml.auto-save-interval", 5);
+        // Auto-save ML model at configured interval (or quick-start override)
+        boolean quickStart = getConfig().getBoolean("ml.quick-start-mode", false);
+        int autoSaveMinutes = quickStart ? 2 : getConfig().getInt("ml.auto-save-interval", 5);
         long autoSaveIntervalTicks = autoSaveMinutes * 60L * 20L; // Convert minutes to ticks (20 ticks/second)
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
             mlManager.saveDetector();

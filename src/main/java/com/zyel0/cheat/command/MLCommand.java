@@ -68,6 +68,9 @@ public class MLCommand implements CommandExecutor {
                     sender.sendMessage("§7Example: /ml ram 3000 (sets limit to 3GB)");
                 }
                 break;
+            case "quickstart":
+                handleQuickStart(sender);
+                break;
             default:
                 sendHelp(sender);
                 break;
@@ -83,6 +86,7 @@ public class MLCommand implements CommandExecutor {
         sender.sendMessage("§e/ml clear <player|all> §7- Clear flags");
         sender.sendMessage("§e/ml save §7- Save ML model to disk");
         sender.sendMessage("§e/ml ram <mb> §7- Set memory limit (e.g., /ml ram 3000)");
+        sender.sendMessage("§e/ml quickstart §7- Toggle quick-start mode");
         sender.sendMessage("§7§m                                    ");
     }
     
@@ -174,8 +178,15 @@ public class MLCommand implements CommandExecutor {
     
     private void handleStatus(CommandSender sender) {
         MovementAnomalyDetector detector = mlManager.getDetector();
+        boolean quickStart = plugin.getConfig().getBoolean("ml.quick-start-mode", false);
         
         sender.sendMessage("§7§m          §r §6ML System Status §7§m          ");
+        
+        // Show quick-start mode if enabled
+        if (quickStart) {
+            sender.sendMessage("§6⚡ Quick Start Mode: §aEnabled");
+        }
+        
         sender.sendMessage("§eTraining Status: §7" + 
             (detector.isTrained() ? "§aCompleted (Continuous Learning)" : "§eInitial Training"));
         
@@ -261,6 +272,32 @@ public class MLCommand implements CommandExecutor {
         } catch (NumberFormatException e) {
             sender.sendMessage("§cInvalid memory limit. Use a number in MB.");
             sender.sendMessage("§7Example: /ml ram 3000 (sets limit to 3GB)");
+        }
+    }
+    
+    private void handleQuickStart(CommandSender sender) {
+        boolean currentMode = plugin.getConfig().getBoolean("ml.quick-start-mode", false);
+        boolean newMode = !currentMode;
+        
+        plugin.getConfig().set("ml.quick-start-mode", newMode);
+        plugin.saveConfig();
+        
+        if (newMode) {
+            sender.sendMessage("§a§l⚡ Quick Start Mode Enabled!");
+            sender.sendMessage("§7");
+            sender.sendMessage("§eOptimizations:");
+            sender.sendMessage("§7• Training Period: §e1 day §7(vs 7 days)");
+            sender.sendMessage("§7• Sample Requirement: §e500 §7(vs 1000)");
+            sender.sendMessage("§7• Memory Limit: §e512MB §7(vs 1GB)");
+            sender.sendMessage("§7• Anomaly Threshold: §e3.0 §7(vs 2.5) - Less false positives");
+            sender.sendMessage("§7• Flag Threshold: §e3 §7(vs 2) - More confirmation needed");
+            sender.sendMessage("§7• Auto-save: §e2 min §7(vs 5 min) - More frequent saves");
+            sender.sendMessage("§7");
+            sender.sendMessage("§6⚠ §eRestart required for changes to take effect!");
+        } else {
+            sender.sendMessage("§c⚡ Quick Start Mode Disabled");
+            sender.sendMessage("§7Standard mode will be used after restart.");
+            sender.sendMessage("§7Default: 7 days, 1000 samples, 1GB memory");
         }
     }
     

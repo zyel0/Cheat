@@ -31,8 +31,9 @@ public class MLManager {
         this.recentAnomalyCount = new ConcurrentHashMap<>();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         
-        // Read config values
-        this.flagThreshold = plugin.getConfig().getInt("ml.flag-threshold", 2);
+        // Read config values with quick-start override
+        boolean quickStart = plugin.getConfig().getBoolean("ml.quick-start-mode", false);
+        this.flagThreshold = quickStart ? 3 : plugin.getConfig().getInt("ml.flag-threshold", 2);
         this.anomalyWindowMs = 60000; // 1 minute window
         
         // Load or create detector
@@ -206,11 +207,20 @@ public class MLManager {
      * Load detector model from disk
      */
     private MovementAnomalyDetector loadDetector() {
-        // Get config values
-        int trainingPeriodDays = plugin.getConfig().getInt("ml.training-period-days", 7);
-        int minSamples = plugin.getConfig().getInt("ml.min-training-samples", 1000);
-        double threshold = plugin.getConfig().getDouble("ml.anomaly-threshold", 2.5);
-        long maxMemoryMB = plugin.getConfig().getLong("ml.max-memory-mb", 1024); // Default 1GB
+        // Check for quick-start mode
+        boolean quickStart = plugin.getConfig().getBoolean("ml.quick-start-mode", false);
+        
+        // Get config values with quick-start overrides
+        int trainingPeriodDays = quickStart ? 1 : plugin.getConfig().getInt("ml.training-period-days", 7);
+        int minSamples = quickStart ? 500 : plugin.getConfig().getInt("ml.min-training-samples", 1000);
+        double threshold = quickStart ? 3.0 : plugin.getConfig().getDouble("ml.anomaly-threshold", 2.5);
+        long maxMemoryMB = quickStart ? 512 : plugin.getConfig().getLong("ml.max-memory-mb", 1024);
+        
+        if (quickStart) {
+            plugin.getLogger().info("§e[Quick Start Mode] Enabled - Optimized for faster training!");
+            plugin.getLogger().info("§e[Quick Start] Training: 1 day | Samples: 500 | Memory: 512MB");
+            plugin.getLogger().info("§e[Quick Start] Higher threshold (3.0) to reduce false positives during rapid learning");
+        }
         
         File dataFolder = new File(plugin.getDataFolder(), "ml-data");
         File modelFile = new File(dataFolder, "model.json");

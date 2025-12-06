@@ -5,27 +5,35 @@ ml:
   # Enable debug logging for ML system
   debug: false
   
-  # Training period in days (default: 7)
+  # Quick Start Mode - Enables faster training with optimizations
+  # When enabled: 1-day training, lower thresholds, more aggressive learning
+  # Recommended for: New servers wanting faster deployment
+  # Note: May have slightly higher false positives initially
+  quick-start-mode: false
+  
+  # Training period in days (default: 7, quick-start: 1)
   # After this period, the system will start flagging anomalies
   # The system continues learning even after this period
   training-period-days: 7
   
-  # Minimum samples needed before training (default: 1000)
+  # Minimum samples needed before training (default: 1000, quick-start: 500)
   min-training-samples: 1000
   
-  # Anomaly threshold (standard deviations, default: 2.5)
+  # Anomaly threshold (standard deviations, default: 2.5, quick-start: 3.0)
   # Higher = less sensitive, Lower = more sensitive
+  # Quick-start uses higher threshold to reduce false positives during rapid learning
   anomaly-threshold: 2.5
   
-  # Number of anomalies needed to create a flag (default: 2)
+  # Number of anomalies needed to create a flag (default: 2, quick-start: 3)
   flag-threshold: 2
   
-  # Auto-save interval in minutes (default: 5)
+  # Auto-save interval in minutes (default: 5, quick-start: 2)
   auto-save-interval: 5
   
-  # Maximum memory usage in MB (default: 1024 = 1GB)
+  # Maximum memory usage in MB (default: 1024 = 1GB, quick-start: 512MB)
   # Can be changed at runtime with /ml ram <mb>
   # Higher values allow more training data but use more RAM
+  # Quick-start uses less memory for faster processing
   max-memory-mb: 1024
 
 # Legacy Login Check Settings (disabled by default, ML system is primary)

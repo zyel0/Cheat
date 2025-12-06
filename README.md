@@ -5,7 +5,8 @@ An advanced Minecraft Spigot/Bukkit plugin (1.21.1+) that uses machine learning 
 ## Features
 
 ### 1. ML-Based Anomaly Detection
-- **Self-Learning System**: Automatically learns normal movement patterns during a training period (~7 days)
+- **Self-Learning System**: Automatically learns normal movement patterns during a training period (~7 days, or 1 day with Quick Start)
+- **Quick Start Mode**: Optimized training in 24 hours with lower resource usage for faster deployment
 - **Real-Time Analysis**: Continuously monitors all player movement during gameplay and PVP
 - **Comprehensive Tracking**: Analyzes speed, acceleration, vertical movement, player state (gliding, flying, sprinting, etc.)
 - **Smart Flagging**: Only flags players showing multiple anomalies, ignoring single unusual movements
@@ -48,9 +49,26 @@ Once trained, the system:
 2. Place it in your server's `plugins` folder
 3. Restart your server
 4. The plugin will automatically start its training period
-5. After 7 days, it will begin detecting anomalies
+5. After 7 days (or 1 day with Quick Start), it will begin detecting anomalies
 
-**Note**: The system needs at least 1000 movement samples to train. With 20+ players, this typically happens within the first few hours.
+**Note**: The system needs at least 1000 movement samples to train (500 with Quick Start). With 20+ players, this typically happens within the first few hours.
+
+### Quick Start Mode (Recommended for New Servers)
+For faster deployment, enable Quick Start mode in `config.yml`:
+```yaml
+ml:
+  quick-start-mode: true
+```
+Or use the command: `/ml quickstart`
+
+Quick Start optimizations:
+- **Training**: 1 day instead of 7 days
+- **Samples**: 500 minimum instead of 1000
+- **Memory**: 512MB instead of 1GB (faster processing)
+- **Threshold**: 3.0 instead of 2.5 (fewer false positives during rapid learning)
+- **Auto-save**: Every 2 minutes instead of 5 (more frequent persistence)
+
+Quick Start is ideal for new servers wanting faster protection with minimal resource usage.
 
 ## Building from Source
 
@@ -72,6 +90,7 @@ The compiled JAR will be in the `target` folder.
 - `/ml clear <player|all>` - Clear flags for a player or all players
 - `/ml save` - Manually save the ML model to disk
 - `/ml ram <mb>` - Set memory limit (e.g., `/ml ram 3000` for 3GB)
+- `/ml quickstart` - Toggle Quick Start mode (requires restart)
 
 Aliases: `/mlac`
 
@@ -93,13 +112,16 @@ Aliases: `/eac`
 The plugin is configurable through `config.yml`:
 
 ### ML Settings
-- `training-period-days` - Initial training period before detection starts (default: 7 days)
-- `min-training-samples` - Minimum samples needed (default: 1000)
-- `anomaly-threshold` - Sensitivity (default: 2.5 std deviations)
-- `flag-threshold` - Anomalies needed to flag (default: 2)
-- `auto-save-interval` - How often to save model (default: 5 minutes)
-- `max-memory-mb` - Maximum RAM usage (default: 1024MB = 1GB)
+- `quick-start-mode` - Enable optimized fast training (default: false)
+- `training-period-days` - Initial training period before detection starts (default: 7 days, quick-start: 1 day)
+- `min-training-samples` - Minimum samples needed (default: 1000, quick-start: 500)
+- `anomaly-threshold` - Sensitivity (default: 2.5 std deviations, quick-start: 3.0)
+- `flag-threshold` - Anomalies needed to flag (default: 2, quick-start: 3)
+- `auto-save-interval` - How often to save model (default: 5 minutes, quick-start: 2 minutes)
+- `max-memory-mb` - Maximum RAM usage (default: 1024MB = 1GB, quick-start: 512MB)
 - `debug` - Enable detailed logging (default: false)
+
+**Quick Start Mode**: Optimizes all settings for faster training with lower resource usage. Ideal for new servers wanting protection within 24 hours instead of 7 days.
 
 **Note**: The system continues learning after the initial training period. It adapts to new playstyles while maintaining memory limits.
 
