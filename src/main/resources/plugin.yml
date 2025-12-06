@@ -1,0 +1,21 @@
+name: Cheat
+version: ${project.version}
+main: com.zyel0.cheat.CheatPlugin
+api-version: 1.20
+author: zyel0
+description: Elytra Anticheat Plugin
+
+commands:
+  elytraac:
+    description: Main command for Elytra Anticheat
+    usage: /<command> [reload|status]
+    permission: elytraac.admin
+    aliases: [eac]
+
+permissions:
+  elytraac.admin:
+    description: Allows access to admin commands
+    default: op
+  elytraac.bypass:
+    description: Bypass elytra anticheat checks
+    default: false

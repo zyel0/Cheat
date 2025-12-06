@@ -1,0 +1,55 @@
+# Elytra Anticheat Configuration
+
+# Login Check Settings
+login-check:
+  enabled: true
+  notify-admins: true
+  log-to-console: true
+  message: "&cPlayer {player} logged in with an elytra equipped!"
+
+# Anticheat Settings
+anticheat:
+  enabled: true
+  
+  # Speed Check
+  speed-check:
+    enabled: true
+    max-speed: 3.5
+    max-horizontal-speed: 2.5
+    violation-threshold: 5
+    actions:
+      - "kick {player} Illegal elytra movement detected"
+  
+  # Vertical Movement Check
+  vertical-check:
+    enabled: true
+    max-vertical-speed: 2.0
+    violation-threshold: 3
+    actions:
+      - "kick {player} Illegal vertical movement detected"
+  
+  # Flight Duration Check
+  duration-check:
+    enabled: true
+    max-flight-duration: 300
+    warn-at-duration: 240
+    violation-threshold: 2
+    actions:
+      - "warn {player} Suspicious flight duration"
+  
+  # Acceleration Check
+  acceleration-check:
+    enabled: true
+    max-acceleration: 0.5
+    violation-threshold: 4
+    actions:
+      - "kick {player} Illegal acceleration detected"
+
+# Notification Settings
+notifications:
+  notify-on-violation: true
+  notify-permission: "elytraac.notify"
+  format: "&7[&cElytraAC&7] &e{player} &7failed check: &c{check} &7(VL: {violations})"
+
+# Debug Mode
+debug: false
