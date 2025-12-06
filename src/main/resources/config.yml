@@ -1,15 +1,36 @@
-# Elytra Anticheat Configuration
+# ML-Based Movement Anticheat Configuration
 
-# Login Check Settings
+# ML System Settings
+ml:
+  # Enable debug logging for ML system
+  debug: false
+  
+  # Training period in days (default: 7)
+  training-period-days: 7
+  
+  # Minimum samples needed before training (default: 1000)
+  min-training-samples: 1000
+  
+  # Anomaly threshold (standard deviations, default: 2.5)
+  # Higher = less sensitive, Lower = more sensitive
+  anomaly-threshold: 2.5
+  
+  # Number of anomalies needed to create a flag (default: 2)
+  flag-threshold: 2
+  
+  # Auto-save interval in minutes (default: 5)
+  auto-save-interval: 5
+
+# Legacy Login Check Settings (disabled by default, ML system is primary)
 login-check:
-  enabled: true
+  enabled: false
   notify-admins: true
   log-to-console: true
   message: "&cPlayer {player} logged in with an elytra equipped!"
 
-# Anticheat Settings
+# Legacy Anticheat Settings (disabled by default, ML system is primary)
 anticheat:
-  enabled: true
+  enabled: false
   
   # Speed Check
   speed-check:

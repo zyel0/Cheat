@@ -2,14 +2,19 @@ package com.zyel0.cheat;
 
 import com.zyel0.cheat.listener.ElytraAnticheatListener;
 import com.zyel0.cheat.listener.ElytraLoginListener;
+import com.zyel0.cheat.listener.MovementListener;
 import com.zyel0.cheat.manager.ViolationManager;
 import com.zyel0.cheat.command.ElytraACCommand;
+import com.zyel0.cheat.command.MLCommand;
+import com.zyel0.cheat.ml.MLManager;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class CheatPlugin extends JavaPlugin {
     
     private static CheatPlugin instance;
     private ViolationManager violationManager;
+    private MLManager mlManager;
     
     @Override
     public void onEnable() {
@@ -20,32 +25,48 @@ public class CheatPlugin extends JavaPlugin {
         
         // Initialize managers
         violationManager = new ViolationManager(this);
+        mlManager = new MLManager(this);
         
-        // Register listeners
-        if (getConfig().getBoolean("login-check.enabled", true)) {
+        // Register ML movement listener (always enabled for data collection)
+        getServer().getPluginManager().registerEvents(new MovementListener(this, mlManager), this);
+        getLogger().info("ML-based movement tracking enabled");
+        
+        // Register legacy listeners if enabled
+        if (getConfig().getBoolean("login-check.enabled", false)) {
             getServer().getPluginManager().registerEvents(new ElytraLoginListener(this), this);
             getLogger().info("Elytra login check enabled");
         }
         
-        if (getConfig().getBoolean("anticheat.enabled", true)) {
+        if (getConfig().getBoolean("anticheat.enabled", false)) {
             getServer().getPluginManager().registerEvents(new ElytraAnticheatListener(this), this);
-            getLogger().info("Elytra anticheat checks enabled");
+            getLogger().info("Legacy anticheat checks enabled");
         }
         
         // Register commands
         getCommand("elytraac").setExecutor(new ElytraACCommand(this));
+        getCommand("ml").setExecutor(new MLCommand(this, mlManager));
         
-        getLogger().info("Cheat plugin has been enabled!");
+        // Auto-save ML model every 5 minutes
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            mlManager.saveDetector();
+        }, 6000L, 6000L); // 6000 ticks = 5 minutes
+        
+        getLogger().info("ML Anticheat plugin has been enabled!");
     }
     
     @Override
     public void onDisable() {
+        // Save ML model before shutdown
+        if (mlManager != null) {
+            mlManager.saveDetector();
+        }
+        
         // Clean up
         if (violationManager != null) {
             violationManager.cleanup();
         }
         
-        getLogger().info("Cheat plugin has been disabled!");
+        getLogger().info("ML Anticheat plugin has been disabled!");
     }
     
     public static CheatPlugin getInstance() {
@@ -54,5 +75,9 @@ public class CheatPlugin extends JavaPlugin {
     
     public ViolationManager getViolationManager() {
         return violationManager;
+    }
+    
+    public MLManager getMLManager() {
+        return mlManager;
     }
 }

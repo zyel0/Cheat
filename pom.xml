@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <name>Cheat</name>
-    <description>Elytra Anticheat Plugin for Minecraft</description>
+    <description>ML-Based Movement Anticheat Plugin for Minecraft</description>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -29,8 +29,22 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.20.1-R0.1-SNAPSHOT</version>
+            <version>1.21.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        
+        <!-- Apache Commons Math for ML algorithms -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+        
+        <!-- Gson for JSON serialization -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
     </dependencies>
 
