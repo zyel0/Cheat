@@ -237,7 +237,8 @@ public class MLCommand implements CommandExecutor {
                 return;
             }
             
-            if (limitMB > 20000) {
+            final long MAX_MEMORY_LIMIT_MB = 20000; // 20GB maximum
+            if (limitMB > MAX_MEMORY_LIMIT_MB) {
                 sender.sendMessage("§cMemory limit cannot exceed 20GB (20000MB).");
                 return;
             }

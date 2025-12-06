@@ -51,6 +51,9 @@ public class MovementAnomalyDetector {
         this.maxSamplesPerContext = calculateMaxSamplesPerContext(maxMemoryMB);
     }
     
+    private static final int ESTIMATED_MOVEMENT_CONTEXTS = 10; // gliding, flying, sprinting, etc.
+    private static final int BYTES_PER_SAMPLE = 200; // Conservative estimate with overhead
+    
     /**
      * Calculate maximum samples per context based on memory limit
      * Assumes ~16 features * 8 bytes per double = 128 bytes per sample
@@ -58,9 +61,7 @@ public class MovementAnomalyDetector {
      */
     private int calculateMaxSamplesPerContext(long memoryMB) {
         long memoryBytes = memoryMB * 1024 * 1024;
-        long bytesPerSample = 200; // Conservative estimate with overhead
-        int estimatedContexts = 10; // Average number of movement contexts
-        return (int) (memoryBytes / (bytesPerSample * estimatedContexts));
+        return (int) (memoryBytes / (BYTES_PER_SAMPLE * ESTIMATED_MOVEMENT_CONTEXTS));
     }
     
     /**
@@ -79,10 +80,10 @@ public class MovementAnomalyDetector {
             
             // Remove oldest samples if exceeding memory limit
             if (contextSamples.size() > maxSamplesPerContext) {
-                // Remove oldest 10% of samples to make room
+                // Remove oldest 10% of samples efficiently
                 int removeCount = maxSamplesPerContext / 10;
-                for (int i = 0; i < removeCount && !contextSamples.isEmpty(); i++) {
-                    contextSamples.remove(0);
+                if (removeCount > 0 && contextSamples.size() > removeCount) {
+                    contextSamples.subList(0, removeCount).clear();
                 }
             }
         }
@@ -124,17 +125,23 @@ public class MovementAnomalyDetector {
     }
     
     /**
-     * Check if we have enough data to train
+     * Check if we should train/retrain the model
+     * Retrains periodically for continuous learning
      */
     private boolean shouldTrain() {
-        if (isTrained) return false;
-        
         int totalSamples = 0;
         for (List<double[]> samples : trainingData.values()) {
             totalSamples += samples.size();
         }
         
-        return totalSamples >= minSamplesForTraining;
+        // Initial training: need minimum samples
+        if (!isTrained) {
+            return totalSamples >= minSamplesForTraining;
+        }
+        
+        // Continuous learning: retrain every 1000 new samples
+        // This keeps the model updated with new patterns
+        return totalSamples % 1000 == 0 && totalSamples > 0;
     }
     
     /**
