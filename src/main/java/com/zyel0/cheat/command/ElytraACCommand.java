@@ -71,7 +71,7 @@ public class ElytraACCommand implements CommandExecutor {
     
     private void handleStatus(CommandSender sender) {
         sender.sendMessage("§7§m          §r §cElytra Anticheat Status §7§m          ");
-        sender.sendMessage("§ePlugin Version: §71.0.0");
+        sender.sendMessage("§ePlugin Version: §7" + plugin.getDescription().getVersion());
         sender.sendMessage("§eLogin Check: §7" + 
             (plugin.getConfig().getBoolean("login-check.enabled") ? "§aEnabled" : "§cDisabled"));
         sender.sendMessage("§eAnticheat: §7" + 

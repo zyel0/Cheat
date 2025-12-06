@@ -11,7 +11,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
@@ -96,12 +96,12 @@ public class ElytraAnticheatListener implements Listener {
         
         // Check overall speed
         if (distance > maxSpeed) {
-            handleViolation(player, "speed-check", distance);
+            handleViolation(player, "overall-speed-check", distance);
         }
         
         // Check horizontal speed
         if (horizontalDistance > maxHorizontalSpeed) {
-            handleViolation(player, "speed-check", horizontalDistance);
+            handleViolation(player, "horizontal-speed-check", horizontalDistance);
         }
     }
     
@@ -213,10 +213,14 @@ public class ElytraAnticheatListener implements Listener {
     }
     
     @EventHandler
-    public void onToggleFlight(PlayerToggleFlightEvent event) {
-        Player player = event.getPlayer();
+    public void onToggleGlide(EntityToggleGlideEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
         
-        if (!event.isFlying()) {
+        Player player = (Player) event.getEntity();
+        
+        if (!event.isGliding()) {
             // Player stopped gliding, clean up
             flightStartTime.remove(player.getUniqueId());
             lastVelocity.remove(player.getUniqueId());

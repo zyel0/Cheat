@@ -16,9 +16,16 @@ anticheat:
     enabled: true
     max-speed: 3.5
     max-horizontal-speed: 2.5
+    
+  overall-speed-check:
     violation-threshold: 5
     actions:
       - "kick {player} Illegal elytra movement detected"
+  
+  horizontal-speed-check:
+    violation-threshold: 5
+    actions:
+      - "kick {player} Illegal horizontal movement detected"
   
   # Vertical Movement Check
   vertical-check:

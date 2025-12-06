@@ -23,7 +23,7 @@ public class ViolationManager {
     
     public void addViolation(Player player, String checkType, int amount) {
         UUID uuid = player.getUniqueId();
-        violations.putIfAbsent(uuid, new HashMap<>());
+        violations.putIfAbsent(uuid, new ConcurrentHashMap<>());
         
         Map<String, Integer> playerViolations = violations.get(uuid);
         int currentViolations = playerViolations.getOrDefault(checkType, 0);
