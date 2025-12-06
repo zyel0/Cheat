@@ -1,0 +1,98 @@
+# ML-Based Movement Anticheat Configuration
+
+# ML System Settings
+ml:
+  # Enable debug logging for ML system
+  debug: false
+  
+  # Quick Start Mode - Enables faster training with optimizations
+  # When enabled: 1-day training, lower thresholds, more aggressive learning
+  # Recommended for: New servers wanting faster deployment
+  # Note: May have slightly higher false positives initially
+  quick-start-mode: false
+  
+  # Training period in days (default: 7, quick-start: 1)
+  # After this period, the system will start flagging anomalies
+  # The system continues learning even after this period
+  training-period-days: 7
+  
+  # Minimum samples needed before training (default: 1000, quick-start: 500)
+  min-training-samples: 1000
+  
+  # Anomaly threshold (standard deviations, default: 2.5, quick-start: 3.0)
+  # Higher = less sensitive, Lower = more sensitive
+  # Quick-start uses higher threshold to reduce false positives during rapid learning
+  anomaly-threshold: 2.5
+  
+  # Number of anomalies needed to create a flag (default: 2, quick-start: 3)
+  flag-threshold: 2
+  
+  # Auto-save interval in minutes (default: 5, quick-start: 2)
+  auto-save-interval: 5
+  
+  # Maximum memory usage in MB (default: 1024 = 1GB, quick-start: 512MB)
+  # Can be changed at runtime with /ml ram <mb>
+  # Higher values allow more training data but use more RAM
+  # Quick-start uses less memory for faster processing
+  max-memory-mb: 1024
+
+# Legacy Login Check Settings (disabled by default, ML system is primary)
+login-check:
+  enabled: false
+  notify-admins: true
+  log-to-console: true
+  message: "&cPlayer {player} logged in with an elytra equipped!"
+
+# Legacy Anticheat Settings (disabled by default, ML system is primary)
+anticheat:
+  enabled: false
+  
+  # Speed Check
+  speed-check:
+    enabled: true
+    max-speed: 3.5
+    max-horizontal-speed: 2.5
+    
+  overall-speed-check:
+    violation-threshold: 5
+    actions:
+      - "kick {player} Illegal elytra movement detected"
+  
+  horizontal-speed-check:
+    violation-threshold: 5
+    actions:
+      - "kick {player} Illegal horizontal movement detected"
+  
+  # Vertical Movement Check
+  vertical-check:
+    enabled: true
+    max-vertical-speed: 2.0
+    violation-threshold: 3
+    actions:
+      - "kick {player} Illegal vertical movement detected"
+  
+  # Flight Duration Check
+  duration-check:
+    enabled: true
+    max-flight-duration: 300
+    warn-at-duration: 240
+    violation-threshold: 2
+    actions:
+      - "warn {player} Suspicious flight duration"
+  
+  # Acceleration Check
+  acceleration-check:
+    enabled: true
+    max-acceleration: 0.5
+    violation-threshold: 4
+    actions:
+      - "kick {player} Illegal acceleration detected"
+
+# Notification Settings
+notifications:
+  notify-on-violation: true
+  notify-permission: "elytraac.notify"
+  format: "&7[&cElytraAC&7] &e{player} &7failed check: &c{check} &7(VL: {violations})"
+
+# Debug Mode
+debug: false

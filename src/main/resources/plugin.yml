@@ -1,0 +1,32 @@
+name: Cheat
+version: ${project.version}
+main: com.zyel0.cheat.CheatPlugin
+api-version: 1.21
+author: zyel0
+description: ML-Based Movement Anticheat Plugin
+
+commands:
+  ml:
+    description: ML Anticheat management
+    usage: /<command> [flags|status|clear|save]
+    permission: cheat.ml.admin
+    aliases: [mlac]
+  elytraac:
+    description: Legacy elytra anticheat command
+    usage: /<command> [reload|status]
+    permission: elytraac.admin
+    aliases: [eac]
+
+permissions:
+  cheat.ml.admin:
+    description: Allows access to ML admin commands
+    default: op
+  cheat.ml.bypass:
+    description: Bypass ML movement tracking
+    default: false
+  elytraac.admin:
+    description: Allows access to legacy admin commands
+    default: op
+  elytraac.bypass:
+    description: Bypass legacy elytra anticheat checks
+    default: false
